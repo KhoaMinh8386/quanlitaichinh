@@ -150,6 +150,62 @@ class TransactionService {
     }
   }
 
+  /// Simulate a webhook for testing purposes
+  Future<Map<String, dynamic>> simulateWebhook({
+    required double amount,
+    required String type, // 'in' or 'out'
+    String? content,
+    String bankCode = 'MBBANK',
+    String accountNumber = '0123456789',
+  }) async {
+    try {
+      final response = await _apiClient.post(
+        '/api/sepay/webhook/simulate',
+        data: {
+          'amount': amount,
+          'type': type,
+          'content': content ?? 'Test transaction ${DateTime.now().millisecondsSinceEpoch}',
+          'bankCode': bankCode,
+          'accountNumber': accountNumber,
+        },
+      );
+      return response.data;
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Link a bank account for receiving webhooks
+  Future<Map<String, dynamic>> linkBankAccount({
+    required String accountNumber,
+    required String bankCode,
+    String? alias,
+  }) async {
+    try {
+      final response = await _apiClient.post(
+        '/api/sepay/link-account',
+        data: {
+          'accountNumber': accountNumber,
+          'bankCode': bankCode,
+          if (alias != null) 'alias': alias,
+        },
+      );
+      return response.data;
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Get webhook logs (recent transactions from webhooks)
+  Future<Map<String, dynamic>> getWebhookLogs() async {
+    try {
+      final response = await _apiClient.get('/api/sepay/webhook/logs');
+      return response.data;
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   String _handleError(dynamic error) {
     if (error is DioException) {
       if (error.response != null) {

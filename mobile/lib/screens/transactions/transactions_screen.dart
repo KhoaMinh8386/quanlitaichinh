@@ -94,6 +94,14 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
           ),
         ],
       ),
+      floatingActionButton: _isSelectionMode
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: _showSyncOptions,
+              icon: const Icon(Icons.sync),
+              label: const Text('Đồng bộ'),
+              backgroundColor: AppColors.primary,
+            ),
     );
   }
 
@@ -616,6 +624,433 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
         Navigator.pop(context); // Close loading dialog
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Lỗi: $e')),
+        );
+      }
+    }
+  }
+
+  void _showSyncOptions() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '🔄 Đồng bộ & Test Webhook',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Chọn hành động để test tích hợp Sepay',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 24),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.refresh, color: AppColors.primary),
+                ),
+                title: const Text('Làm mới giao dịch'),
+                subtitle: const Text('Tải lại danh sách từ server'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () {
+                  Navigator.pop(context);
+                  _refreshTransactions();
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.income.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.add_circle, color: AppColors.income),
+                ),
+                title: const Text('Test: Tiền vào'),
+                subtitle: const Text('Giả lập nhận tiền từ Sepay'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showSimulateDialog('in');
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.expense.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.remove_circle, color: AppColors.expense),
+                ),
+                title: const Text('Test: Tiền ra'),
+                subtitle: const Text('Giả lập chi tiền từ Sepay'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showSimulateDialog('out');
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.account_balance, color: Colors.blue),
+                ),
+                title: const Text('Liên kết tài khoản'),
+                subtitle: const Text('Thêm tài khoản ngân hàng'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showLinkAccountDialog();
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.history, color: Colors.orange),
+                ),
+                title: const Text('Webhook Logs'),
+                subtitle: const Text('Xem lịch sử webhook'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showWebhookLogs();
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _refreshTransactions() async {
+    ref.invalidate(transactionsProvider);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Đã làm mới danh sách giao dịch'),
+        backgroundColor: AppColors.primary,
+      ),
+    );
+  }
+
+  void _showSimulateDialog(String type) {
+    final amountController = TextEditingController(text: '100000');
+    final contentController = TextEditingController(
+      text: type == 'in' ? 'CHUYEN TIEN TEST' : 'GRAB FOOD thanh toan',
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(type == 'in' ? '💰 Test: Tiền vào' : '💸 Test: Tiền ra'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: amountController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Số tiền (VND)',
+                prefixIcon: Icon(Icons.attach_money),
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: contentController,
+              decoration: const InputDecoration(
+                labelText: 'Nội dung chuyển khoản',
+                prefixIcon: Icon(Icons.description),
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _simulateWebhook(
+                type: type,
+                amount: double.tryParse(amountController.text) ?? 100000,
+                content: contentController.text,
+              );
+            },
+            child: const Text('Gửi Test'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _simulateWebhook({
+    required String type,
+    required double amount,
+    required String content,
+  }) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final service = ref.read(transactionServiceProvider);
+      final result = await service.simulateWebhook(
+        amount: amount,
+        type: type,
+        content: content,
+      );
+
+      if (mounted) {
+        Navigator.pop(context);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ ${result['message'] ?? 'Webhook đã gửi thành công!'}'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+
+        // Refresh transactions after 1 second
+        await Future.delayed(const Duration(seconds: 1));
+        ref.invalidate(transactionsProvider);
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Lỗi: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showLinkAccountDialog() {
+    final accountController = TextEditingController();
+    String selectedBank = 'MBBANK';
+
+    final banks = [
+      {'code': 'MBBANK', 'name': 'MB Bank'},
+      {'code': 'VCB', 'name': 'Vietcombank'},
+      {'code': 'TCB', 'name': 'Techcombank'},
+      {'code': 'BIDV', 'name': 'BIDV'},
+      {'code': 'ACB', 'name': 'ACB'},
+      {'code': 'VPB', 'name': 'VPBank'},
+      {'code': 'TPB', 'name': 'TPBank'},
+    ];
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('🏦 Liên kết tài khoản'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<String>(
+                value: selectedBank,
+                decoration: const InputDecoration(
+                  labelText: 'Chọn ngân hàng',
+                  border: OutlineInputBorder(),
+                ),
+                items: banks.map((bank) => DropdownMenuItem(
+                  value: bank['code'],
+                  child: Text(bank['name']!),
+                )).toList(),
+                onChanged: (value) {
+                  setDialogState(() => selectedBank = value!);
+                },
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: accountController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Số tài khoản',
+                  prefixIcon: Icon(Icons.credit_card),
+                  border: OutlineInputBorder(),
+                  hintText: 'VD: 0123456789',
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Hủy'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (accountController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Vui lòng nhập số tài khoản')),
+                  );
+                  return;
+                }
+                Navigator.pop(context);
+                _linkAccount(accountController.text, selectedBank);
+              },
+              child: const Text('Liên kết'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _linkAccount(String accountNumber, String bankCode) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final service = ref.read(transactionServiceProvider);
+      final result = await service.linkBankAccount(
+        accountNumber: accountNumber,
+        bankCode: bankCode,
+      );
+
+      if (mounted) {
+        Navigator.pop(context);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ ${result['message'] ?? 'Đã liên kết tài khoản!'}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Lỗi: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _showWebhookLogs() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final service = ref.read(transactionServiceProvider);
+      final result = await service.getWebhookLogs();
+
+      if (mounted) {
+        Navigator.pop(context);
+        
+        final transactions = result['transactions'] as List? ?? [];
+        
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('📋 Webhook Logs'),
+            content: SizedBox(
+              width: double.maxFinite,
+              height: 400,
+              child: transactions.isEmpty
+                  ? const Center(
+                      child: Text('Chưa có webhook nào được nhận'),
+                    )
+                  : ListView.builder(
+                      itemCount: transactions.length,
+                      itemBuilder: (context, index) {
+                        final tx = transactions[index];
+                        final formatter = NumberFormat.currency(
+                          locale: 'vi_VN',
+                          symbol: 'đ',
+                          decimalDigits: 0,
+                        );
+                        return ListTile(
+                          leading: Icon(
+                            tx['type'] == 'income'
+                                ? Icons.arrow_downward
+                                : Icons.arrow_upward,
+                            color: tx['type'] == 'income'
+                                ? AppColors.income
+                                : AppColors.expense,
+                          ),
+                          title: Text(
+                            tx['rawDescription'] ?? 'No description',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: Text(
+                            '${tx['bankAccount']?['bankName'] ?? 'Unknown'} • ${tx['createdAt']?.toString().substring(0, 16) ?? ''}',
+                          ),
+                          trailing: Text(
+                            formatter.format(tx['amount'] ?? 0),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: tx['type'] == 'income'
+                                  ? AppColors.income
+                                  : AppColors.expense,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Đóng'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Lỗi: $e'),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     }
