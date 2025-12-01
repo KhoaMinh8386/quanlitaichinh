@@ -203,6 +203,19 @@ class TransactionService {
     }
   }
 
+  /// Get raw webhook JSON payloads from Sepay
+  Future<Map<String, dynamic>> getRawWebhookLogs({int limit = 50}) async {
+    try {
+      final response = await _apiClient.get(
+        '/api/sepay/webhook/raw',
+        queryParameters: {'limit': limit},
+      );
+      return response.data;
+    } catch (e) {
+      throw Exception('Failed to get raw webhook logs: $e');
+    }
+  }
+
   /// Get webhook logs (recent transactions from webhooks)
   Future<Map<String, dynamic>> getWebhookLogs() async {
     try {

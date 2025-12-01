@@ -150,6 +150,29 @@ export class SepayController {
       logger.info('Headers:', JSON.stringify(req.headers, null, 2));
       logger.info('Body:', JSON.stringify(req.body, null, 2));
 
+      // Save raw webhook payload to database
+      const rawPayload = req.body;
+      const accountNumber = rawPayload.accountNumber || null;
+      
+      // Try to find user by account number
+      let userId: string | null = null;
+      if (accountNumber) {
+        userId = await this.findUserByAccountNumber(accountNumber);
+      }
+
+      // Save webhook log
+      await prisma.webhookLog.create({
+        data: {
+          userId: userId || null,
+          accountNumber: accountNumber,
+          rawPayload: rawPayload,
+          headers: req.headers as any,
+          processed: false,
+        },
+      });
+
+      logger.info(`Webhook log saved for account: ${accountNumber || 'unknown'}`);
+
       const signature = req.headers[sepayConfig.webhook.signatureHeader] as string;
       const timestamp = req.headers[sepayConfig.webhook.timestampHeader] as string;
       const rawBody = JSON.stringify(req.body);
@@ -226,6 +249,24 @@ export class SepayController {
       
       logger.info(`Webhook processed: ${result.message}`);
       
+      // Update webhook log as processed
+      if (userId) {
+        await prisma.webhookLog.updateMany({
+          where: {
+            userId: userId,
+            accountNumber: payload.accountNumber,
+            processed: false,
+            createdAt: {
+              gte: new Date(Date.now() - 60000), // Last minute
+            },
+          },
+          data: {
+            processed: true,
+            errorMessage: result.success ? null : result.message,
+          },
+        });
+      }
+      
       // Always return 200 to Sepay
       res.json({
         success: true,
@@ -234,6 +275,29 @@ export class SepayController {
       });
     } catch (error: any) {
       logger.error('Public webhook error:', error);
+      
+      // Update webhook log with error
+      try {
+        const accountNumber = req.body?.accountNumber || null;
+        if (accountNumber) {
+          await prisma.webhookLog.updateMany({
+            where: {
+              accountNumber: accountNumber,
+              processed: false,
+              createdAt: {
+                gte: new Date(Date.now() - 60000), // Last minute
+              },
+            },
+            data: {
+              processed: true,
+              errorMessage: error.message || 'Unknown error',
+            },
+          });
+        }
+      } catch (logError) {
+        logger.error('Failed to update webhook log:', logError);
+      }
+      
       // Always return 200 to Sepay to acknowledge receipt
       res.json({ success: true, message: 'Error processing webhook: ' + error.message });
     }
@@ -457,14 +521,43 @@ export class SepayController {
 
       logger.info('Simulating webhook:', payload);
 
+      // Save raw webhook payload to database
+      await prisma.webhookLog.create({
+        data: {
+          userId: userId,
+          accountNumber: accountNumber,
+          rawPayload: payload as any,
+          headers: { 'x-simulated': 'true' } as any,
+          processed: false,
+        },
+      });
+
       const result = await sepayService.processWebhook(payload, userId);
+
+      // Update webhook log as processed
+      await prisma.webhookLog.updateMany({
+        where: {
+          userId: userId,
+          accountNumber: accountNumber,
+          processed: false,
+          createdAt: {
+            gte: new Date(Date.now() - 60000), // Last minute
+          },
+        },
+        data: {
+          processed: true,
+          errorMessage: result.success ? null : result.message,
+        },
+      });
 
       res.json({
         success: true,
         message: 'Webhook simulated successfully',
         result,
+        rawPayload: payload, // Return raw payload for viewing
       });
-    } catch (error) {
+    } catch (error: any) {
+      logger.error('Simulate webhook error:', error);
       next(error);
     }
   }
@@ -508,6 +601,43 @@ export class SepayController {
         success: true,
         transactions: recentTransactions,
         count: recentTransactions.length,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get raw webhook JSON payloads (for viewing Sepay webhook data)
+   * GET /api/sepay/webhook/raw
+   */
+  async getRawWebhookLogs(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = (req as any).user.id;
+      const { limit = 50 } = req.query;
+
+      // Get webhook logs for this user
+      const webhookLogs = await prisma.webhookLog.findMany({
+        where: {
+          userId: userId,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: parseInt(limit as string, 10),
+        select: {
+          id: true,
+          accountNumber: true,
+          rawPayload: true,
+          headers: true,
+          processed: true,
+          errorMessage: true,
+          createdAt: true,
+        },
+      });
+
+      res.json({
+        success: true,
+        webhooks: webhookLogs,
+        count: webhookLogs.length,
       });
     } catch (error) {
       next(error);

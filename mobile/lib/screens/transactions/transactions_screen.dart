@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -770,6 +771,23 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                   _showWebhookLogs();
                 },
               ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.purple.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.code, color: Colors.purple),
+                ),
+                title: const Text('Raw Webhook JSON'),
+                subtitle: const Text('Xem JSON từ Sepay'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showRawWebhookLogs();
+                },
+              ),
               const SizedBox(height: 16),
             ],
           ),
@@ -996,6 +1014,136 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _showRawWebhookLogs() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final service = ref.read(transactionServiceProvider);
+      final result = await service.getRawWebhookLogs();
+
+      if (mounted) {
+        Navigator.pop(context);
+        
+        final webhooks = result['webhooks'] as List? ?? [];
+        
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('📦 Raw Webhook JSON'),
+            content: SizedBox(
+              width: double.maxFinite,
+              height: 500,
+              child: webhooks.isEmpty
+                  ? const Center(
+                      child: Text('Chưa có webhook nào được nhận'),
+                    )
+                  : ListView.builder(
+                      itemCount: webhooks.length,
+                      itemBuilder: (context, index) {
+                        final webhook = webhooks[index];
+                        final dateFormat = DateFormat('dd/MM/yyyy HH:mm:ss');
+                        final createdAt = webhook['createdAt'] != null
+                            ? DateTime.parse(webhook['createdAt'])
+                            : null;
+                        
+                        return ExpansionTile(
+                          leading: Icon(
+                            webhook['processed'] == true
+                                ? Icons.check_circle
+                                : Icons.pending,
+                            color: webhook['processed'] == true
+                                ? Colors.green
+                                : Colors.orange,
+                          ),
+                          title: Text(
+                            webhook['accountNumber'] ?? 'Unknown',
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                          subtitle: createdAt != null
+                              ? Text(dateFormat.format(createdAt))
+                              : null,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Raw JSON:',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[100],
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: SelectableText(
+                                      _formatJson(webhook['rawPayload']),
+                                      style: const TextStyle(
+                                        fontFamily: 'monospace',
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ),
+                                  if (webhook['errorMessage'] != null) ...[
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Error: ${webhook['errorMessage']}',
+                                      style: const TextStyle(
+                                        color: Colors.red,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Đóng'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi: $e')),
+        );
+      }
+    }
+  }
+
+  String _formatJson(dynamic json) {
+    try {
+      if (json is Map || json is List) {
+        // Convert to pretty JSON string
+        const encoder = JsonEncoder.withIndent('  ');
+        return encoder.convert(json);
+      }
+      return json.toString();
+    } catch (e) {
+      return json.toString();
     }
   }
 

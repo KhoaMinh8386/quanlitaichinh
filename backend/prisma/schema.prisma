@@ -23,6 +23,7 @@ model User {
   alerts           Alert[]
   categories       Category[]
   categoryPatterns CategoryPattern[]
+  webhookLogs      WebhookLog[]
 
   @@index([email])
   @@map("users")
@@ -215,4 +216,22 @@ model CategoryRule {
   @@index([keywordNormalized])
   @@index([priority])
   @@map("category_rules")
+}
+
+model WebhookLog {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String?  @map("user_id") @db.Uuid
+  accountNumber String?  @map("account_number") @db.VarChar(50)
+  rawPayload    Json     @map("raw_payload")
+  headers       Json?    @default("{}")
+  processed     Boolean  @default(false)
+  errorMessage  String?  @map("error_message") @db.Text
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([accountNumber])
+  @@index([createdAt(sort: Desc)])
+  @@map("webhook_logs")
 }
