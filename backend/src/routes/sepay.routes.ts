@@ -94,6 +94,15 @@ router.get('/webhook/raw', (req, res, next) =>
   sepayController.getRawWebhookLogs(req, res, next)
 );
 
+/**
+ * @route GET /api/sepay/webhook/info
+ * @desc Get webhook URL information for configuration
+ * @access Private (requires authentication)
+ */
+router.get('/webhook/info', (req, res, next) => 
+  sepayController.getWebhookInfo(req, res, next)
+);
+
 // Sync transactions from Sepay
 router.post('/sync', (req, res, next) => 
   sepayController.syncTransactions(req, res, next)

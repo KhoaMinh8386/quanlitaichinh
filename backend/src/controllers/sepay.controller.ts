@@ -647,6 +647,52 @@ export class SepayController {
   }
 
   /**
+   * Get webhook URL information
+   * GET /api/sepay/webhook/info
+   */
+  async getWebhookInfo(req: Request, res: Response, next: NextFunction) {
+    try {
+      const protocol = req.protocol;
+      const host = req.get('host');
+      const localUrl = `${protocol}://${host}/api/sepay/webhook/public`;
+      
+      // Production URL from environment or config
+      const productionUrl = process.env.RENDER_EXTERNAL_URL || 
+                          process.env.WEBHOOK_URL || 
+                          'https://quanlitaichinh.onrender.com';
+      const productionWebhookUrl = `${productionUrl}/api/sepay/webhook/public`;
+
+      res.json({
+        success: true,
+        webhook: {
+          local: {
+            url: localUrl,
+            description: 'URL cho backend local (localhost)',
+            note: 'Cần dùng ngrok hoặc tương tự để expose localhost ra internet',
+          },
+          production: {
+            url: productionWebhookUrl,
+            description: 'URL cho production (Render)',
+            note: 'URL này nên được cấu hình tại Sepay Dashboard',
+          },
+          current: {
+            url: process.env.NODE_ENV === 'production' ? productionWebhookUrl : localUrl,
+            environment: process.env.NODE_ENV || 'development',
+          },
+          instructions: {
+            step1: 'Đăng nhập Sepay Dashboard: https://my.sepay.vn',
+            step2: 'Vào mục Cài đặt > Webhook',
+            step3: `Thêm URL webhook: ${productionWebhookUrl}`,
+            step4: 'Lưu cấu hình',
+          },
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Helper: Find user by account number
    */
   private async findUserByAccountNumber(accountNumber: string): Promise<string | null> {

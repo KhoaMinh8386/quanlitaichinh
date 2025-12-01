@@ -231,7 +231,9 @@ App được thiết kế theo Material Design 3 với:
 
 ### Sepay Integration
 - `GET /api/sepay/test` - Test kết nối Sepay
-- `POST /api/sepay/webhook/public` - Webhook nhận giao dịch từ Sepay
+- `POST /api/sepay/webhook/public` - Webhook nhận giao dịch từ Sepay (public, không cần auth)
+- `GET /api/sepay/webhook/info` - Xem thông tin webhook URL để cấu hình
+- `GET /api/sepay/webhook/raw` - Xem raw JSON từ webhook (sau khi đăng nhập)
 - `POST /api/sepay/sync` - Đồng bộ giao dịch từ Sepay
 - `POST /api/sepay/link-account` - Liên kết tài khoản ngân hàng
 
@@ -240,8 +242,10 @@ App được thiết kế theo Material Design 3 với:
 ### Cấu hình Webhook tại Sepay
 
 1. Truy cập [Sepay Dashboard](https://my.sepay.vn)
-2. Thêm Webhook URL: `https://your-domain.com/api/sepay/webhook/public`
-3. Lấy Webhook Secret và thêm vào `.env`
+2. Thêm Webhook URL: `https://quanlitaichinh.onrender.com/api/sepay/webhook/public`
+   - ⚠️ **Lưu ý**: Dùng URL Render (production), webhook từ Sepay sẽ gửi đến đây
+   - Backend local chỉ để test, không nhận webhook thực từ Sepay
+3. Lấy Webhook Secret và thêm vào `.env` trên Render
 
 ### Payload mẫu từ Sepay
 

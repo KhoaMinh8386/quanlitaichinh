@@ -22,4 +22,6 @@ export const config = {
     redirectUri: process.env.OAUTH_REDIRECT_URI || '',
   },
   logLevel: process.env.LOG_LEVEL || 'info',
+  // Webhook URL configuration
+  webhookUrl: process.env.WEBHOOK_URL || process.env.RENDER_EXTERNAL_URL || '',
 };

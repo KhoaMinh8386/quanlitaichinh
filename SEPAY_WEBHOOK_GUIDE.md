@@ -2,17 +2,22 @@
 
 ## 📌 Thông tin Webhook
 
-### Endpoint URL
+### Endpoint URL Production (Render)
 ```
-POST https://your-domain.com/api/sepay/webhook/public
+POST https://quanlitaichinh.onrender.com/api/sepay/webhook/public
 ```
 
-**Lưu ý**: Endpoint này KHÔNG yêu cầu authentication vì Sepay sẽ gọi trực tiếp.
+**⚠️ QUAN TRỌNG**: URL này phải được cấu hình tại Sepay Dashboard để nhận webhook từ Sepay.
 
 ### Development/Local Testing
 ```
-POST http://localhost:3000/api/sepay/webhook/public
+POST http://localhost:3001/api/sepay/webhook/public
 ```
+
+**Lưu ý**: 
+- Endpoint này KHÔNG yêu cầu authentication vì Sepay sẽ gọi trực tiếp
+- Backend local có thể test bằng cách simulate webhook hoặc dùng ngrok để expose localhost
+- Webhook thực từ Sepay sẽ gửi đến Render (production URL)
 
 ---
 
@@ -24,7 +29,9 @@ POST http://localhost:3000/api/sepay/webhook/public
 
 ### Bước 2: Thêm Webhook
 1. Vào mục **Cài đặt** > **Webhook**
-2. Thêm URL webhook: `https://your-domain.com/api/sepay/webhook/public`
+2. Thêm URL webhook: `https://quanlitaichinh.onrender.com/api/sepay/webhook/public`
+   - ⚠️ **Lưu ý**: Dùng URL Render (production), KHÔNG dùng localhost
+   - Backend local chỉ để test, webhook thực từ Sepay sẽ gửi đến Render
 3. Chọn các sự kiện muốn nhận: **Giao dịch mới**
 4. Lưu cấu hình
 
@@ -73,11 +80,25 @@ SEPAY_WEBHOOK_SECRET=your-webhook-secret
 
 ## 🧪 Test Webhook
 
+### Xem Webhook URL Info
+
+```bash
+# Đăng nhập trước
+TOKEN=$(curl -X POST http://localhost:3001/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "demo@example.com", "password": "Demo123456!"}' \
+  | jq -r '.tokens.accessToken')
+
+# Xem thông tin webhook URL
+curl http://localhost:3001/api/sepay/webhook/info \
+  -H "Authorization: Bearer $TOKEN"
+```
+
 ### Cách 1: Sử dụng cURL
 
 ```bash
-# Test giao dịch chi (expense)
-curl -X POST http://localhost:3000/api/sepay/webhook/public \
+# Test giao dịch chi (expense) - Local
+curl -X POST http://localhost:3001/api/sepay/webhook/public \
   -H "Content-Type: application/json" \
   -d '{
     "id": 12345,
@@ -96,8 +117,8 @@ curl -X POST http://localhost:3000/api/sepay/webhook/public \
 ```
 
 ```bash
-# Test giao dịch thu (income)
-curl -X POST http://localhost:3000/api/sepay/webhook/public \
+# Test giao dịch thu (income) - Local
+curl -X POST http://localhost:3001/api/sepay/webhook/public \
   -H "Content-Type: application/json" \
   -d '{
     "id": 12346,
@@ -117,7 +138,8 @@ curl -X POST http://localhost:3000/api/sepay/webhook/public \
 
 ### Cách 2: Sử dụng Postman
 
-1. Tạo request mới: `POST http://localhost:3000/api/sepay/webhook/public`
+1. Tạo request mới: `POST http://localhost:3001/api/sepay/webhook/public` (local)
+   hoặc `POST https://quanlitaichinh.onrender.com/api/sepay/webhook/public` (production)
 2. Headers: `Content-Type: application/json`
 3. Body (raw JSON):
 ```json
@@ -137,13 +159,13 @@ curl -X POST http://localhost:3000/api/sepay/webhook/public \
 
 ```bash
 # Đăng nhập trước
-TOKEN=$(curl -X POST http://localhost:3000/api/auth/login \
+TOKEN=$(curl -X POST http://localhost:3001/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email": "demo@example.com", "password": "Demo123456!"}' \
   | jq -r '.tokens.accessToken')
 
-# Simulate webhook
-curl -X POST http://localhost:3000/api/sepay/webhook/simulate \
+# Simulate webhook (test local)
+curl -X POST http://localhost:3001/api/sepay/webhook/simulate \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{
@@ -161,7 +183,7 @@ curl -X POST http://localhost:3000/api/sepay/webhook/simulate \
 Trước khi webhook có thể match giao dịch với user, cần liên kết tài khoản:
 
 ```bash
-curl -X POST http://localhost:3000/api/sepay/link-account \
+curl -X POST http://localhost:3001/api/sepay/link-account \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{
@@ -178,7 +200,7 @@ Sau khi liên kết, webhook sẽ tự động match giao dịch dựa trên 4 s
 ## 📊 Xem Logs Webhook
 
 ```bash
-curl http://localhost:3000/api/sepay/webhook/logs \
+curl http://localhost:3001/api/sepay/webhook/logs \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
@@ -284,7 +306,7 @@ x-sepay-timestamp: 1701432000000
 
 ### Xem giao dịch đã tạo:
 ```bash
-curl http://localhost:3000/api/transactions \
+curl http://localhost:3001/api/transactions \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
