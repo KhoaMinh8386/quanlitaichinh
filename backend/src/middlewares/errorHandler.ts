@@ -8,7 +8,9 @@ export class AppError extends Error {
   ) {
     super(message);
     this.name = this.constructor.name;
-    Error.captureStackTrace(this, this.constructor);
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, this.constructor);
+    }
   }
 }
 
@@ -20,6 +22,12 @@ export class ValidationError extends AppError {
 
 export class AuthenticationError extends AppError {
   constructor(message: string = 'Authentication required') {
+    super(401, message);
+  }
+}
+
+export class UnauthorizedError extends AppError {
+  constructor(message: string = 'Unauthorized') {
     super(401, message);
   }
 }

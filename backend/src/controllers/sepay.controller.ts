@@ -67,7 +67,7 @@ export class SepayController {
    * Webhook endpoint to receive transactions from Sepay
    * POST /api/sepay/webhook
    */
-  async handleWebhook(req: Request, res: Response, next: NextFunction) {
+  async handleWebhook(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const signature = req.headers[sepayConfig.webhook.signatureHeader] as string;
       const timestamp = req.headers[sepayConfig.webhook.timestampHeader] as string;
@@ -108,10 +108,11 @@ export class SepayController {
       if (!userId) {
         logger.warn(`No user found for account number: ${payload.accountNumber}`);
         // Still return 200 to acknowledge receipt
-        return res.json({
+        res.json({
           success: true,
           message: 'Webhook received but no matching user found',
         });
+        return;
       }
 
       const result = await sepayService.processWebhook(payload, userId);
@@ -143,7 +144,7 @@ export class SepayController {
    *   "description": ""
    * }
    */
-  async handlePublicWebhook(req: Request, res: Response, next: NextFunction) {
+  async handlePublicWebhook(req: Request, res: Response, _next: NextFunction): Promise<void> {
     try {
       logger.info('=== SEPAY WEBHOOK RECEIVED ===');
       logger.info('Headers:', JSON.stringify(req.headers, null, 2));
@@ -159,7 +160,8 @@ export class SepayController {
         if (!isValid) {
           logger.warn('Invalid webhook signature on public endpoint');
           // Return 200 anyway to not expose validation details
-          return res.json({ success: true, message: 'Received' });
+          res.json({ success: true, message: 'Received' });
+          return;
         }
         logger.info('Webhook signature verified successfully');
       }
@@ -183,12 +185,14 @@ export class SepayController {
       // Validate required fields
       if (!payload.accountNumber) {
         logger.warn('Missing accountNumber in payload');
-        return res.json({ success: true, message: 'Invalid payload - missing accountNumber' });
+        res.json({ success: true, message: 'Invalid payload - missing accountNumber' });
+        return;
       }
 
       if (payload.transferAmount === undefined || payload.transferAmount === null) {
         logger.warn('Missing transferAmount in payload');
-        return res.json({ success: true, message: 'Invalid payload - missing transferAmount' });
+        res.json({ success: true, message: 'Invalid payload - missing transferAmount' });
+        return;
       }
 
       // Find user by account number (match last 4 digits)
@@ -205,14 +209,16 @@ export class SepayController {
         if (anyBankAccount) {
           logger.info(`Using fallback user: ${anyBankAccount.userId}`);
           const result = await sepayService.processWebhook(payload, anyBankAccount.userId);
-          return res.json({
+          res.json({
             success: true,
             message: result.isDuplicate ? 'Duplicate transaction' : 'Transaction processed (fallback user)',
             transactionId: result.transaction?.id,
           });
+          return;
         }
         
-        return res.json({ success: true, message: 'No matching user found' });
+        res.json({ success: true, message: 'No matching user found' });
+        return;
       }
 
       logger.info(`Processing webhook for user: ${userId}`);
@@ -273,7 +279,7 @@ export class SepayController {
    *   "alias": "Tài khoản chính"       // Optional friendly name
    * }
    */
-  async linkAccount(req: Request, res: Response, next: NextFunction) {
+  async linkAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = (req as any).user.id;
       const { accountNumber, bankCode, alias } = req.body;
@@ -365,7 +371,7 @@ export class SepayController {
           },
         });
 
-        return res.json({
+        res.json({
           success: true,
           message: 'Account already linked, updated alias',
           account: {
@@ -375,6 +381,7 @@ export class SepayController {
             accountMask: updated.accountNumberMask,
           },
         });
+        return;
       }
 
       // Create bank account - store last 4 digits for webhook matching

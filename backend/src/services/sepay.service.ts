@@ -1,4 +1,4 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import axios, { AxiosInstance } from 'axios';
 import crypto from 'crypto';
 import { sepayConfig } from '../config/sepay';
