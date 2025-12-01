@@ -323,28 +323,59 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   }
 
   Widget _buildError(Object error) {
+    final errorMessage = error.toString();
+    final isAuthError = errorMessage.contains('đăng nhập') || 
+                        errorMessage.contains('401') ||
+                        errorMessage.contains('Unauthorized');
+    
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, size: 64, color: AppColors.error),
-          const SizedBox(height: 16),
-          Text(
-            'Lỗi tải dữ liệu',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            error.toString(),
-            style: Theme.of(context).textTheme.bodyMedium,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () => ref.invalidate(transactionsProvider),
-            child: const Text('Thử lại'),
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isAuthError ? Icons.lock_outline : Icons.error_outline, 
+              size: 64, 
+              color: isAuthError ? AppColors.primary : AppColors.error,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              isAuthError ? 'Cần đăng nhập' : 'Lỗi tải dữ liệu',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              isAuthError 
+                  ? 'Vui lòng đăng nhập để xem giao dịch'
+                  : errorMessage,
+              style: Theme.of(context).textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            if (isAuthError)
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pushNamedAndRemoveUntil(
+                    context, 
+                    '/login', 
+                    (route) => false,
+                  );
+                },
+                icon: const Icon(Icons.login),
+                label: const Text('Đăng nhập'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                ),
+              )
+            else
+              ElevatedButton.icon(
+                onPressed: () => ref.invalidate(transactionsProvider),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Thử lại'),
+              ),
+          ],
+        ),
       ),
     );
   }

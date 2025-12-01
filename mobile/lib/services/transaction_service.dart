@@ -209,9 +209,36 @@ class TransactionService {
   String _handleError(dynamic error) {
     if (error is DioException) {
       if (error.response != null) {
-        return error.response?.data['message'] ?? 'An error occurred';
+        final statusCode = error.response?.statusCode;
+        final message = error.response?.data['message'];
+        
+        // Handle specific status codes
+        if (statusCode == 401) {
+          return 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.';
+        }
+        if (statusCode == 403) {
+          return 'Bạn không có quyền truy cập.';
+        }
+        if (statusCode == 404) {
+          return 'Không tìm thấy dữ liệu.';
+        }
+        if (statusCode == 500) {
+          return 'Lỗi máy chủ. Vui lòng thử lại sau.';
+        }
+        
+        return message ?? 'Đã xảy ra lỗi';
       }
-      return 'Network error. Please check your connection.';
+      
+      // Handle connection errors
+      if (error.type == DioExceptionType.connectionTimeout ||
+          error.type == DioExceptionType.receiveTimeout) {
+        return 'Kết nối quá chậm. Vui lòng thử lại.';
+      }
+      if (error.type == DioExceptionType.connectionError) {
+        return 'Không thể kết nối đến máy chủ. Kiểm tra kết nối mạng.';
+      }
+      
+      return 'Lỗi kết nối mạng. Vui lòng kiểm tra kết nối.';
     }
     return error.toString();
   }
