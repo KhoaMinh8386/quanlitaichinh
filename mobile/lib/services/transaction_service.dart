@@ -216,6 +216,44 @@ class TransactionService {
     }
   }
 
+  /// Sync transactions from Google Sheets
+  Future<Map<String, dynamic>> syncGoogleSheets({
+    required String spreadsheetId,
+    String? range,
+  }) async {
+    try {
+      final response = await _apiClient.post(
+        '/api/google-sheets/sync',
+        data: {
+          'spreadsheetId': spreadsheetId,
+          if (range != null) 'range': range,
+        },
+      );
+      return response.data;
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Preview Google Sheets data
+  Future<Map<String, dynamic>> previewGoogleSheets({
+    required String spreadsheetId,
+    String? range,
+  }) async {
+    try {
+      final response = await _apiClient.get(
+        '/api/google-sheets/preview',
+        queryParameters: {
+          'spreadsheetId': spreadsheetId,
+          if (range != null) 'range': range,
+        },
+      );
+      return response.data;
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   /// Get webhook logs (recent transactions from webhooks)
   Future<Map<String, dynamic>> getWebhookLogs() async {
     try {

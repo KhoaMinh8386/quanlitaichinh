@@ -10,17 +10,17 @@ class AppConfig {
   
   static const String environment = String.fromEnvironment(
     'ENVIRONMENT',
-    defaultValue: 'production', // Changed to production by default
+    defaultValue: 'development', // Changed to development for local backend
   );
   
   static const bool isProduction = environment == 'production';
   static const bool isDevelopment = environment == 'development';
   
-  // API Base URL - defaults to production
-  // Override with --dart-define=API_BASE_URL=http://your-url for development
+  // API Base URL - defaults to development (local) for Google Sheets integration
+  // Override with --dart-define=API_BASE_URL=http://your-url for production
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: productionUrl,
+    defaultValue: developmentUrl, // Use local backend by default
   );
   
   // Sepay webhook info (for reference)

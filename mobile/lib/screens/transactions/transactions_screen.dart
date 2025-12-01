@@ -788,6 +788,23 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                   _showRawWebhookLogs();
                 },
               ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.table_chart, color: Colors.green),
+                ),
+                title: const Text('Đồng bộ Google Sheets'),
+                subtitle: const Text('Lấy dữ liệu từ Google Sheets'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showGoogleSheetsSync();
+                },
+              ),
               const SizedBox(height: 16),
             ],
           ),
@@ -1145,6 +1162,99 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     } catch (e) {
       return json.toString();
     }
+  }
+
+  Future<void> _showGoogleSheetsSync() async {
+    final spreadsheetId = '1dUnR5LJ57Q4BQLviOsckPGySkb3YtjD5_gRAvZrgt0s';
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('📊 Đồng bộ Google Sheets'),
+        content: const Text(
+          'Bạn có muốn đồng bộ dữ liệu từ Google Sheets vào hệ thống không?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              
+              // Show loading
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (context) => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+
+              try {
+                final service = ref.read(transactionServiceProvider);
+                final result = await service.syncGoogleSheets(
+                  spreadsheetId: spreadsheetId,
+                );
+
+                if (mounted) {
+                  Navigator.pop(context); // Close loading
+                  
+                  final success = result['success'] == true;
+                  final message = result['message'] ?? '';
+                  final data = result['data'] ?? {};
+                  final synced = data['synced'] ?? 0;
+                  final skipped = data['skipped'] ?? 0;
+                  final errors = data['errors'] ?? 0;
+
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: Text(success ? '✅ Thành công' : '❌ Lỗi'),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(message),
+                          if (success) ...[
+                            const SizedBox(height: 8),
+                            Text('Đã đồng bộ: $synced'),
+                            Text('Đã bỏ qua: $skipped'),
+                            if (errors > 0) Text('Lỗi: $errors'),
+                          ],
+                        ],
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            // Refresh transactions
+                            ref.invalidate(transactionsProvider);
+                          },
+                          child: const Text('OK'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  Navigator.pop(context); // Close loading
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Lỗi: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('Đồng bộ'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _showWebhookLogs() async {
