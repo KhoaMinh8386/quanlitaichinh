@@ -1,0 +1,70 @@
+name: financial_management
+description: Advanced Financial Management Mobile Application
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Preferences
+  shared_preferences: ^2.2.0
+
+  # State Management
+  flutter_riverpod: ^2.4.9
+  riverpod_annotation: ^2.3.3
+  
+  # HTTP Client
+  dio: ^5.4.0
+  
+  # Charts
+  fl_chart: ^0.65.0
+  
+  # Secure Storage
+  flutter_secure_storage: ^9.0.0
+  
+  # WebView
+  webview_flutter: ^4.4.2
+  
+  # Property-Based Testing
+  glados: ^1.1.7
+  
+  # UI
+  cupertino_icons: ^1.0.6
+  intl: ^0.18.1
+  
+  # Utilities
+  equatable: ^2.0.5
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.8.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  
+  flutter_lints: ^3.0.1
+  
+  # Code Generation
+  build_runner: ^2.4.7
+  riverpod_generator: ^2.3.9
+  freezed: ^2.4.6
+  json_serializable: ^6.7.1
+  
+  # Testing
+  mockito: ^5.4.4
+
+flutter:
+  uses-material-design: true
+  
+  # Assets
+  # assets:
+  #   - images/
+  
+  # Fonts
+  # fonts:
+  #   - family: Roboto
+  #     fonts:
+  #       - asset: fonts/Roboto-Regular.ttf

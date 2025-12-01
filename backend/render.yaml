@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: financial-management-api
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:prod
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+      - key: SEPAY_WEBHOOK_SECRET
+        sync: false
+      - key: SEPAY_API_KEY
+        sync: false
+      - key: SEPAY_BASE_URL
+        value: https://my.sepay.vn/userapi
+
+databases:
+  - name: financial-db
+    plan: free
+    databaseName: financial_management
+    user: admin
+
