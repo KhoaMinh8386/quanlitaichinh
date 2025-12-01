@@ -15,6 +15,7 @@ import forecastRoutes from './routes/forecast.routes';
 import alertRoutes from './routes/alert.routes';
 import sepayRoutes from './routes/sepay.routes';
 import analyticsRoutes from './routes/analytics.routes';
+import googleSheetsRoutes from './routes/googleSheets.routes';
 
 const app = express();
 
@@ -47,6 +48,7 @@ app.use('/api/forecast', forecastRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/sepay', sepayRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/google-sheets', googleSheetsRoutes);
 // app.use('/api/banks', bankRoutes);
 
 // Error handling
