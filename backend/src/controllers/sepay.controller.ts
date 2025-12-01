@@ -218,8 +218,10 @@ export class SepayController {
         return;
       }
 
-      // Find user by account number (match last 4 digits)
-      const userId = await this.findUserByAccountNumber(payload.accountNumber);
+      // Find user by account number (match last 4 digits) - update userId if not found earlier
+      if (!userId) {
+        userId = await this.findUserByAccountNumber(payload.accountNumber);
+      }
 
       if (!userId) {
         logger.info(`No user found for account: ${payload.accountNumber}`);
