@@ -28,20 +28,27 @@ class TransactionService {
       if (categoryId != null) queryParams['categoryId'] = categoryId;
       if (accountId != null) queryParams['accountId'] = accountId;
 
+      print('🔍 Fetching transactions with params: $queryParams');
+      
       final response = await _apiClient.get(
         '/api/transactions',
         queryParameters: queryParams,
       );
 
+      print('✅ Response received: ${response.statusCode}');
+
       final transactions = (response.data['transactions'] as List)
           .map((t) => Transaction.fromJson(t))
           .toList();
+
+      print('📊 Parsed ${transactions.length} transactions');
 
       return {
         'transactions': transactions,
         'pagination': response.data['pagination'],
       };
     } catch (e) {
+      print('❌ Error fetching transactions: $e');
       throw _handleError(e);
     }
   }

@@ -32,14 +32,25 @@ class ApiClient {
           final token = await getAccessToken();
           if (token != null) {
             options.headers['Authorization'] = 'Bearer $token';
+            print('🔑 Request to ${options.path} with token');
+          } else {
+            print('⚠️ Request to ${options.path} WITHOUT token');
           }
           return handler.next(options);
         },
+        onResponse: (response, handler) {
+          print('✅ Response ${response.statusCode} from ${response.requestOptions.path}');
+          return handler.next(response);
+        },
         onError: (error, handler) async {
+          print('❌ Error ${error.response?.statusCode} from ${error.requestOptions.path}: ${error.message}');
+          
           if (error.response?.statusCode == 401) {
+            print('🔄 Trying to refresh token...');
             // Try to refresh token
             final refreshed = await _refreshToken();
             if (refreshed) {
+              print('✅ Token refreshed successfully');
               // Retry the request
               final opts = error.requestOptions;
               final token = await getAccessToken();
@@ -48,8 +59,11 @@ class ApiClient {
                 final response = await _dio.fetch(opts);
                 return handler.resolve(response);
               } catch (e) {
+                print('❌ Retry failed: $e');
                 return handler.next(error);
               }
+            } else {
+              print('❌ Token refresh failed');
             }
           }
           return handler.next(error);
